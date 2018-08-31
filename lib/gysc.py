@@ -8,23 +8,57 @@
 
 import json
 
+# http://petstore.swagger.io/v2/swagger.json
 class Parser(object):
     def __init__(self, json):
         self.json = json
 
+    def parse2(self):
+        definitions = self.json["definition"]
+
+        for contract_name in definitions.keys():
+            contract = definitions[contract_name]
+            properties = contract["properties"]
+
+            for property_name in properties.keys():
+                property = properties[property_name]
+                type = property["type"]
+                swift_type = ""
+
+                try:
+                    for case in  property["enum"]:
+                        print(case)
+                except:
+                    pass
+
+                if type == "string":
+                    try:
+                        if property["format"] == "date-time":
+                            swift_type = "Date"
+                    except:
+                        swift_type = "String"
+
+                elif type == "integer":
+                    swift_type = "Integer"
+
+                elif type == "boolean":
+                    swift_type = "Boolean"
+               
     def parse(self):
-        # path: /v1/foo/bar
+        # path: /pet/findByStatus
         for path in self.json["paths"]:
             # http_method: get
             for http_method in path:
                 # response: 404
                 for response in http_method["responses"]:
-                    if "schema" in response:
-                        # xpath: #/definitions/FooResponse
-                        xpath = response["schema"]["$ref"]
-
-                        definition = self.xpath_query(xpath)
-                        self.parse_definition(definition)
+                    try:
+                        for item in response["schema"]["items"]:
+                            # xpath: #/definitions/Pet
+                            xpath = item["$ref"]
+                            definition = self.xpath_query(xpath)
+                            self.parse_definition(definition)
+                    except:
+                        pass
 
     def parse_definition(self, definition):
         for property in definition["properties"]:
