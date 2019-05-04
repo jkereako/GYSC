@@ -2,17 +2,18 @@
 # -*- coding: utf-8 -*-
 #
 # GYSC
-# gysc.py
+# swagger.py
 #
-# Created by Jeff Kereakoglow on 8/31/18.
+# Created by Jeff Kereakoglow on 5/2/19.
 # Copyright © 2018 AlexisDigital. All rights reserved.
 
 import json
 
 # http://petstore.swagger.io/v2/swagger.json
 class Swagger(object):
-    def __init__(self, json):
-        self.json = json
+    def __init__(self, json_file_path):
+        with open(json_file_path) as json_file:
+            self.json = json.load(json_file)
 
     def parse_definitions(self):
         contracts_dict = {}
@@ -75,53 +76,14 @@ class Swagger(object):
 
         return contracts_dict
 
-    def parse(self):
-        # path: /pet/findByStatus
-        for path in self.json["paths"]:
-            # http_method: get
-            for http_method in path:
-                # response: 404
-                for response in http_method["responses"]:
-                    try:
-                        for item in response["schema"]["items"]:
-                            # xpath: #/definitions/Pet
-                            xpath = item["$ref"]
-                            definition = self.xpath_query(xpath)
-                            self.parse_definition(definition)
-                    except:
-                        pass
-
-    def parse_definition(self, definition):
-        for property in definition["properties"]:
-            if "$ref" in property:
-                xpath = property["$ref"]
-                definition = self.xpath_query(xpath)
-                self.parse_definition(definition)
-
-    def xpath_query(self, xpath):
-        value = self.json
-
-        try:
-            for x in xpath.strip("/").split("/"):
-                value = value.get(x)
-        except:
-            pass
-
-        return value
-
 def main():
-    with open("../temp/swagger.json") as json_file:
-        json_data  = json.load(json_file)
-        swagger = Swagger(json_data)
+    try:
+        swagger = Swagger("../temp/swagger.json")
         print(swagger.parse_definitions())
 
-        # try:
-        #     json_data  = json.load(json_file)
-        #     swagger = Swagger(json_data)
-
-        # except ValueError:
-        #     # TODO: Report an error to the Shell script
-        #     print("Failed to parse the JSON file")
+    except ValueError:
+        # TODO: Report an error to the Shell script
+        print("Failed to parse the JSON file")
 
 if __name__ == "__main__":
     main()

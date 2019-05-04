@@ -1,6 +1,7 @@
 # Temporary directories
 temp
 tmp
+contracts
 
 #-- Xcode
 ## Build generated
