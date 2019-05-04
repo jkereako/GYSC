@@ -1,4 +1,4 @@
-#!/bin/bash -e
+#!/usr/bin/env bash -e
 #
 # GYSC
 # gysc
@@ -8,7 +8,7 @@
 #
 # Built with shell-script-skeleton v0.0.3 <http://github.com/z017/shell-script-skeleton>
 
-source "$(dirname "${BASH_SOURCE[0]}")../lib/common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
 
 #-- Constants
 
@@ -20,11 +20,11 @@ readonly REQUIRED_TOOLS=(python)
 
 # Long Options. To expect an argument for an option, just place a : (colon)
 # after the proper option flag.
-readonly LONG_OPTS=(help version url)
+readonly LONG_OPTS=(help version url:)
 
 # Short Options. To expect an argument for an option, just place a : (colon)
 # after the proper option flag.
-readonly SHORT_OPTS=hvu
+readonly SHORT_OPTS=hv
 
 # Script name
 readonly SCRIPT_NAME=${0##*/}
@@ -40,12 +40,9 @@ USAGE:
   $SCRIPT_NAME [options] <command>
 
 OPTIONS:
+  --url               URL of the Swagger JSON
   --help, -h          Alias help command
   --version, -v       Alias version command
-  --url               Don't ask for confirmation
-  --                  Denotes the end of the options.  Arguments after this
-                        will be handled as parameters even if they start with
-                        a '-'.
 
 COMMANDS:
   help                Display detailed help
@@ -60,16 +57,26 @@ function version_command() {
 }
 
 function default_command() {
-  # set default command here
-  help_command
+  generate_command
 }
 
-function download_command() {
-  curl -v -H "Content-type: application/json" -o swagger.json $1
+function generate_command() {
+  download_swagger_resource $1
+}
 
-  res=$?
-  if test "$res" != "0"; then
-    err "cURL failed with '$res'"; exit 2; ;;
+function download_swagger_resource() {
+  temp_dir="temp"
+
+  if [ ! -d "$temp_dir" ]; then
+    mkdir $temp_dir
+  fi
+  
+  status=$(curl --insecure -XGET -s -H "Content-type: application/json" -o ./$temp_dir/swagger.json -w "%{http_code}" "${1}")
+
+  if (($status >= 400 && $status <= 599)); then
+    err "Failed to download the Swagger resource"; exit 2;
+  elif (($status >= 200 && $status <= 299)); then
+    echo "Downloaded $1"
   fi
 }
 
@@ -111,9 +118,9 @@ function main() {
   do
     case "$opt" in
       # List of options
+      url)          generate_command "$OPTARG";;
       v|version)    version_command; exit 0; ;;
       h|help)       help_command ;;
-      force)        FORCE=true ;;
       # Errors
       ::)	err "Unexpected argument to option '$OPTARG'"; exit 2; ;;
       :)	err "Missing argument to option '$OPTARG'"; exit 2; ;;
@@ -125,7 +132,7 @@ function main() {
   shift $((OPTIND-1))
 
   # No more arguments -> call default command
-  [[ -z "$1" ]] && default_command
+  # [[ -z "$1" ]] && default_command
 
   # Set command and arguments
   command="$1" && shift
@@ -133,15 +140,16 @@ function main() {
 
   # Execute the command
   case "$command" in
-    # help
-    help)     help_command ;;
+    # Help
+    help)      help_command ;;
 
-    # version
-    version)  version_command ;;
+    # Version
+    version)   version_command ;;
 
     # Unknown command
     *)  err "Unknown command '$command'"; exit 2; ;;
   esac
 }
 
+# Run the damn thing
 main "$@"
