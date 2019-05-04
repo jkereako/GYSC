@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+# -*- coding: utf-8 -*-
 #
 # GYSC
 # gysc.py
@@ -9,27 +10,51 @@
 import json
 
 # http://petstore.swagger.io/v2/swagger.json
-class Parser(object):
+class Swagger(object):
     def __init__(self, json):
         self.json = json
 
-    def parse2(self):
-        definitions = self.json["definition"]
+    def parse_definitions(self):
+        contracts_dict = {}
 
+        definitions = self.json["definitions"]
+        
         for contract_name in definitions.keys():
+            properties_dict = {}
             contract = definitions[contract_name]
             properties = contract["properties"]
 
             for property_name in properties.keys():
-                property = properties[property_name]
-                type = property["type"]
                 swift_type = ""
 
-                try:
-                    for case in  property["enum"]:
-                        print(case)
-                except:
-                    pass
+                property = properties[property_name]
+                
+                # Is this property a reference to an object?
+                if "$ref" in property:
+                    swift_type = property["$ref"].split("/")[-1]
+                    
+                    properties_dict[property_name] = swift_type
+                    continue
+
+                # If not, then this property will have a type
+                type = property["type"]
+
+                # Is this property an enum?
+                if "enum" in property:
+                    # Make up the contract name for the enum
+                    swift_type = contract_name.capitalize() + property_name.capitalize()
+
+                    # Declare the type
+                    properties_dict[property_name] = swift_type
+
+                    # Define the cases
+                    enum_cases = {}
+                    for case in property["enum"]:
+                        enum_cases[case] = type
+
+                    contracts_dict[swift_type] = enum_cases
+
+                    continue
 
                 if type == "string":
                     try:
@@ -39,11 +64,17 @@ class Parser(object):
                         swift_type = "String"
 
                 elif type == "integer":
-                    swift_type = "Integer"
+                    swift_type = "Int"
 
                 elif type == "boolean":
-                    swift_type = "Boolean"
-               
+                    swift_type = "Bool"
+
+                properties_dict[property_name] = swift_type
+        
+            contracts_dict[contract_name] = properties_dict
+
+        return contracts_dict
+
     def parse(self):
         # path: /pet/findByStatus
         for path in self.json["paths"]:
@@ -79,12 +110,18 @@ class Parser(object):
         return value
 
 def main():
-    with open("swagger.json") as json_file:
+    with open("../temp/swagger.json") as json_file:
         json_data  = json.load(json_file)
+        swagger = Swagger(json_data)
+        print(swagger.parse_definitions())
 
-        Parse(json_data)
+        # try:
+        #     json_data  = json.load(json_file)
+        #     swagger = Swagger(json_data)
 
-    pprint(data)
+        # except ValueError:
+        #     # TODO: Report an error to the Shell script
+        #     print("Failed to parse the JSON file")
 
 if __name__ == "__main__":
     main()
