@@ -61,22 +61,24 @@ function default_command() {
 }
 
 function generate_command() {
-  download_swagger_resource $1
+  dir="temp"
+  file="swagger.json"
+
+  if [ ! -d "$dir" ]; then
+    mkdir $dir
+  fi
+
+  download_swagger_resource $1 "./$dir/$file"
 }
 
 function download_swagger_resource() {
-  temp_dir="temp"
-
-  if [ ! -d "$temp_dir" ]; then
-    mkdir $temp_dir
-  fi
-  
-  status=$(curl --insecure -XGET -s -H "Content-type: application/json" -o ./$temp_dir/swagger.json -w "%{http_code}" "${1}")
+  echo "Downloading $1"
+  status=$(curl --insecure -XGET -s -H "Content-type: application/json" -o $2 -w "%{http_code}" "${1}")
 
   if (($status >= 400 && $status <= 599)); then
     err "Failed to download the Swagger resource"; exit 2;
   elif (($status >= 200 && $status <= 299)); then
-    echo "Downloaded $1"
+    echo "Done"
   fi
 }
 
