@@ -8,7 +8,7 @@
 #
 # Built with shell-script-skeleton v0.0.3 <http://github.com/z017/shell-script-skeleton>
 
-source "$(dirname "${BASH_SOURCE[0]}")/../lib/common.sh"
+source "$(dirname "${BASH_SOURCE[0]}")/lib/common.sh"
 
 #-- Constants
 
