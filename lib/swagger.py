@@ -16,7 +16,7 @@ class Swagger(object):
             self.json = json.load(json_file)
 
     def parse_definitions(self):
-        contracts_dict = {}
+        contracts_dict = {"structs": {}, "enums": {}}
 
         definitions = self.json["definitions"]
         
@@ -53,17 +53,28 @@ class Swagger(object):
                     for case in property["enum"]:
                         enum_cases[case] = type
 
-                    contracts_dict[swift_type] = enum_cases
+                    contracts_dict["enums"][swift_type] = enum_cases
 
                     continue
 
-                if type == "string":
-                    try:
-                        if property["format"] == "date-time":
-                            swift_type = "Date"
-                    except:
-                        swift_type = "String"
+                if type == "array":
+                    if "items" in property:
+                        items = property["items"]
+                        element_type = ""
 
+                        if "type" in items:
+                            element_type = items["type"].capitalize()
+                        elif "$ref" in items:
+                            element_type = items["$ref"].split("/")[-1].capitalize()
+
+                        swift_type = '[' + element_type + ']'
+                        
+                if type == "string":
+                    swift_type = "String"
+
+                    if "format" in property and property["format"] == "date-time":
+                        swift_type = "Date"
+                    
                 elif type == "integer":
                     swift_type = "Int"
 
@@ -72,7 +83,7 @@ class Swagger(object):
 
                 properties_dict[property_name] = swift_type
         
-            contracts_dict[contract_name] = properties_dict
+            contracts_dict["structs"][contract_name] = properties_dict
 
         return contracts_dict
 
