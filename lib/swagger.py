@@ -29,15 +29,13 @@ class Swagger(object):
             properties = contract["properties"]
 
             for property_name in properties.keys():
-                swift_type = ""
-
                 property = properties[property_name]
                 
                 # Is this property a reference to an object?
                 if "$ref" in property:
-                    swift_type = property["$ref"].split("/")[-1]
+                    type = property["$ref"].split("/")[-1]
                     
-                    properties_list.append(Property(property_name, swift_type))
+                    properties_list.append(Property(property_name, type))
                     continue
 
                 # If not, then this property will have a type
@@ -46,11 +44,11 @@ class Swagger(object):
                 # Is this property an enum?
                 if "enum" in property:
                     # Make up the contract name for the enum
-                    swift_type = contract_name.capitalize() + property_name.capitalize()
+                    name = contract_name.capitalize() + property_name.capitalize()
 
                     # Declare the type
                     contracts_list.append(
-                        Enum(swift_type, type.capitalize(), property["enum"])
+                        Enum(name, type.capitalize(), property["enum"])
                     )
 
                     continue
