@@ -2,7 +2,7 @@
 # -*- coding: utf-8 -*-
 #
 # GYSC
-# gyb_generator.py
+# generator.py
 #
 # Created by Jeff Kereakoglow on 8/31/18.
 # Copyright © 2018 AlexisDigital. All rights reserved.
@@ -12,7 +12,7 @@ import time
 from swagger import Swagger
 
 # http://petstore.swagger.io/v2/swagger.json
-class ContractGenerator(object):
+class Generator(object):
     def __init__(self, swagger):
         if type(swagger) is not Swagger:
             raise TypeError("Expected a Swagger object")
@@ -20,7 +20,7 @@ class ContractGenerator(object):
         self.swagger = swagger
 
     def generate(self):
-        directory = "contracts"
+        directory = "../contracts"
         self.mkdir(directory)
 
         definitions = self.swagger.parse_definitions()
@@ -83,7 +83,7 @@ class ContractGenerator(object):
 def main():
     try:
         swagger = Swagger("../temp/swagger.json")
-        generator = ContractGenerator(swagger)
+        generator = Generator(swagger)
 
         generator.generate()
 
