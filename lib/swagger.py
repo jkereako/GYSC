@@ -8,6 +8,9 @@
 # Copyright © 2018 AlexisDigital. All rights reserved.
 
 import json
+from enum import Enum
+from struct import Struct
+from property import Property
 
 # http://petstore.swagger.io/v2/swagger.json
 class Swagger(object):
@@ -16,12 +19,12 @@ class Swagger(object):
             self.json = json.load(json_file)
 
     def parse_definitions(self):
-        contracts_dict = {"structs": {}, "enums": {}}
-
+        contracts_list = []
         definitions = self.json["definitions"]
         
         for contract_name in definitions.keys():
-            properties_dict = {}
+            properties_list = []
+
             contract = definitions[contract_name]
             properties = contract["properties"]
 
@@ -34,7 +37,7 @@ class Swagger(object):
                 if "$ref" in property:
                     swift_type = property["$ref"].split("/")[-1]
                     
-                    properties_dict[property_name] = swift_type
+                    properties_list.append(Property(property_name, swift_type))
                     continue
 
                 # If not, then this property will have a type
@@ -46,14 +49,9 @@ class Swagger(object):
                     swift_type = contract_name.capitalize() + property_name.capitalize()
 
                     # Declare the type
-                    properties_dict[property_name] = swift_type
-
-                    # Define the cases
-                    enum_cases = {}
-                    for case in property["enum"]:
-                        enum_cases[case] = type
-
-                    contracts_dict["enums"][swift_type] = enum_cases
+                    contracts_list.append(
+                        Enum(swift_type, type.capitalize(), property["enum"])
+                    )
 
                     continue
 
@@ -81,16 +79,16 @@ class Swagger(object):
                 elif type == "boolean":
                     swift_type = "Bool"
 
-                properties_dict[property_name] = swift_type
-        
-            contracts_dict["structs"][contract_name] = properties_dict
+                properties_list.append(Property(property_name, swift_type))
 
-        return contracts_dict
+            contracts_list.append(Struct(contract_name, properties_list))
+
+        return contracts_list
 
 def main():
     try:
         swagger = Swagger("../temp/swagger.json")
-        print(swagger.parse_definitions())
+        swagger.parse_definitions()
 
     except ValueError:
         # TODO: Report an error to the Shell script
